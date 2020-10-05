@@ -1,8 +1,5 @@
 package com.example.covidinfo;
 
-import com.example.covidinfo.Models.Country;
-import com.example.covidinfo.Models.CountryInfo;
-
 import java.util.List;
 
 import io.reactivex.rxjava3.core.Observable;

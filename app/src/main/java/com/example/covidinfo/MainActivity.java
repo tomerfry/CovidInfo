@@ -1,11 +1,5 @@
 package com.example.covidinfo;
 
-import androidx.appcompat.app.AppCompatActivity;
-import hu.akarnokd.rxjava3.retrofit.RxJava3CallAdapterFactory;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -25,13 +19,16 @@ import com.anychart.enums.Anchor;
 import com.anychart.enums.MarkerType;
 import com.anychart.enums.TooltipPositionMode;
 import com.anychart.graphics.vector.Stroke;
-import com.example.covidinfo.Models.Country;
-import com.example.covidinfo.Models.CountryInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+
+import androidx.appcompat.app.AppCompatActivity;
+import hu.akarnokd.rxjava3.retrofit.RxJava3CallAdapterFactory;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
@@ -167,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onNothingSelected(AdapterView<?> parent) {
     }
 
-    private class CustomDataEntry extends ValueDataEntry {
+    private static class CustomDataEntry extends ValueDataEntry {
 
         public CustomDataEntry(String date, Number confirmed, Number deaths, Number recovered, Number active) {
             super(date, confirmed);
