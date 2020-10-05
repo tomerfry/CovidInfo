@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         spinner = findViewById(R.id.spinner);
         chartView = findViewById(R.id.chart);
+        this.chartView.setProgressBar(findViewById(R.id.progress_bar));
 
         this.retrofit = new Retrofit.Builder()
                 .baseUrl("https://api.covid19api.com")
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 
         ArrayList<String> countries = this.getCountrySlugs();
-        ArrayAdapter<String> countriesAdapter = new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item, countries);
+        ArrayAdapter<String> countriesAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, countries);
 
         Log.i(TAG, "onCreate: " + countries);
         spinner.setAdapter(countriesAdapter);
@@ -99,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         String country = (String)parent.getAdapter().getItem(position);
 
         List<CountryInfo> countryInfos = this.covidApi.countryInfo(country).subscribeOn(Schedulers.io()).blockingFirst();
-        List<DataEntry>dataEntries = new ArrayList<DataEntry>();
+        List<DataEntry>dataEntries = new ArrayList<>();
         Log.i(TAG, "onItemSelected: " + countryInfos);
 
         for (CountryInfo countryInfo : countryInfos) {
@@ -119,7 +120,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         chart.tooltip().positionMode(TooltipPositionMode.POINT);
 
         chart.title("Trend of Covid-19 Cases for specific Country");
-
         chart.yAxis(0).title("Number of cases");
         chart.xAxis(0).labels().padding(5d, 5d, 5d, 5d);
 
