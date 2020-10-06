@@ -1,6 +1,5 @@
 package com.example.covidinfo;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -8,26 +7,26 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
-import com.example.covidinfo.custom.MyMarkerView;
-import com.example.covidinfo.formatter.DateValueFormatter;
+import com.anychart.AnyChart;
+import com.anychart.AnyChartView;
+import com.anychart.chart.common.dataentry.DataEntry;
+import com.anychart.chart.common.dataentry.ValueDataEntry;
+import com.anychart.charts.Cartesian;
+import com.anychart.core.cartesian.series.Line;
+import com.anychart.data.Mapping;
+import com.anychart.data.Set;
+import com.anychart.enums.Anchor;
+import com.anychart.enums.MarkerType;
+import com.anychart.graphics.vector.Stroke;
 import com.example.covidinfo.models.CountryInfo;
 import com.example.covidinfo.viewmodel.MainActivityViewModel;
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.Legend;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.utils.ColorTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
@@ -36,8 +35,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private ArrayAdapter<String> adapter;
     private Spinner spinner;
     private MainActivityViewModel viewModel;
-    private LineChart lineChart;
-    private String referenceTimeStamp;
+    private AnyChartView chartView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         this.spinner.setOnItemSelectedListener(this);
 //        this.progressBar = findViewById(R.id.progress_bar);
 
-        viewModel = ViewModelProviders.of(this).get(MainActivityViewModel.class);
+        viewModel = new ViewModelProvider(this).get(MainActivityViewModel.class);
         viewModel.init();
         viewModel.getCountries().observe(this, new Observer<List<String>>() {
             @Override
@@ -78,120 +76,70 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     public void initLineChart() {
-        this.lineChart = findViewById(R.id.line_chart);
-        this.lineChart.getDescription().setEnabled(false);
-        this.lineChart.setTouchEnabled(true);
-        this.lineChart.setDragDecelerationFrictionCoef(0.9f);
-        this.lineChart.setDragEnabled(true);
-        this.lineChart.setScaleEnabled(true);
-        this.lineChart.setDrawGridBackground(true);
-        this.lineChart.setHighlightPerDragEnabled(true);
-
-        this.lineChart.animateX(1500);
-
-        this.lineChart.setBackgroundColor(Color.WHITE);
-        this.lineChart.setViewPortOffsets(0f, 0f, 0f, 0f);
-
-        MyMarkerView mv = new MyMarkerView(this, R.layout.custom_marker_view);
-        mv.setChartView(this.lineChart);
-        this.lineChart.setMarker(mv);
-
-        Legend l = this.lineChart.getLegend();
-        l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
-        l.setOrientation(Legend.LegendOrientation.VERTICAL);
-        l.setDrawInside(false);
-
-        XAxis xAxis = this.lineChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM_INSIDE);
-        xAxis.setTextSize(10f);
-        xAxis.setTextColor(Color.WHITE);
-        xAxis.setDrawAxisLine(false);
-        xAxis.setDrawGridLines(true);
-        xAxis.setDrawLabels(true);
-        xAxis.setTextColor(Color.BLACK);
-        xAxis.setCenterAxisLabels(true);
-        xAxis.setGranularity(1f); // one hour
-
-        YAxis leftAxis = this.lineChart.getAxisLeft();
-        leftAxis.setPosition(YAxis.YAxisLabelPosition.INSIDE_CHART);
-        leftAxis.setTextColor(ColorTemplate.getHoloBlue());
-        leftAxis.setDrawGridLines(true);
-        leftAxis.setGranularityEnabled(true);
-//        leftAxis.setAxisMinimum(0f);
-//        leftAxis.setAxisMaximum(170f);
-        leftAxis.setYOffset(-9f);
-        leftAxis.setTextColor(Color.BLACK);
-
-        YAxis rightAxis = this.lineChart.getAxisRight();
-        rightAxis.setEnabled(false);
+        this.chartView = findViewById(R.id.chart);
     }
 
-    public void setData(List<CountryInfo> countryInfos, String referenceTimeStamp) {
-        ArrayList<Entry> confirmedValues = new ArrayList<>();
-        ArrayList<Entry> deathsValues = new ArrayList<>();
-        ArrayList<Entry> recoveredValues = new ArrayList<>();
-        ArrayList<Entry> activeValues = new ArrayList<>();
+    public void setData(List<CountryInfo> countryInfos) {
 
-        ILineDataSet confirmedDataSet;
-        ILineDataSet deathsDataSet;
-        ILineDataSet recoveredDataSet;
-        ILineDataSet activeDataSet;
-
-        int index = 0;
+        List<DataEntry>dataEntries = new ArrayList<>();
         for (CountryInfo countryInfo : countryInfos) {
-            confirmedValues.add(new Entry(index, countryInfo.getConfirmed()));
-            deathsValues.add(new Entry(index, countryInfo.getDeaths()));
-            recoveredValues.add(new Entry(index, countryInfo.getRecovered()));
-            activeValues.add(new Entry(index, countryInfo.getActive()));
-            index++;
+            dataEntries.add(new CustomDataEntry(
+                    countryInfo.getDate().substring(0, 10),
+                    countryInfo.getConfirmed(),
+                    countryInfo.getDeaths(),
+                    countryInfo.getRecovered(),
+                    countryInfo.getActive()));
         }
 
-        confirmedDataSet = new LineDataSet(confirmedValues, "Confirmed");
-        deathsDataSet = new LineDataSet(deathsValues, "Deaths");
-        recoveredDataSet = new LineDataSet(recoveredValues, "Recovered");
-        activeDataSet = new LineDataSet(activeValues, "Active");
+        Cartesian chart = AnyChart.line();
+        chart.animation(true);
+        chart.padding(5d, 20d, 50d, 20d);
+        chart.crosshair().enabled(true);
+        chart.crosshair().yLabel(true).yStroke((Stroke) null, null, null, (String) null, (String) null);
+        chart.title("Trend of Covid-19 cases for specific country");
+        chart.yAxis(0).title("Number of cases");
+        chart.xAxis(0).labels().padding(5d, 5d, 5d, 5d);
 
-        List<ILineDataSet> lineDataSets = new ArrayList<>();
-        lineDataSets.add(confirmedDataSet);
-        lineDataSets.add(deathsDataSet);
-        lineDataSets.add(recoveredDataSet);
-        lineDataSets.add(activeDataSet);
+        chart.xScroller(true);
 
-//        ((LineDataSet) lineDataSets.get(0)).enableDashedLine(50, 10, 0);
-        ((LineDataSet) lineDataSets.get(0)).setColor(Color.YELLOW);
-        ((LineDataSet) lineDataSets.get(0)).setCircleColor(Color.YELLOW);
-        ((LineDataSet) lineDataSets.get(0)).setDrawCircles(false);
-        ((LineDataSet) lineDataSets.get(0)).setLineWidth(4);
+        Set set = Set.instantiate();
+        set.data(dataEntries);
 
-//        ((LineDataSet) lineDataSets.get(1)).enableDashedLine(50, 10, 0);
-        ((LineDataSet) lineDataSets.get(1)).setColor(Color.RED);
-        ((LineDataSet) lineDataSets.get(1)).setCircleColor(Color.RED);
-        ((LineDataSet) lineDataSets.get(1)).setDrawCircles(false);
-        ((LineDataSet) lineDataSets.get(1)).setLineWidth(4);
+        Mapping confirmedMapping = set.mapAs("{ x: 'date', value: 'confirmed'}");
+        Mapping deathsMapping = set.mapAs("{ x: 'date', value: 'deaths'}");
+        Mapping recoveredMapping = set.mapAs("{ x: 'date', value: 'recovered'}");
+        Mapping activeMapping = set.mapAs("{ x: 'date', value: 'active'}");
 
-//        ((LineDataSet) lineDataSets.get(2)).enableDashedLine(50, 10, 0);
-        ((LineDataSet) lineDataSets.get(2)).setColor(Color.GREEN);
-        ((LineDataSet) lineDataSets.get(2)).setCircleColor(Color.GREEN);
-        ((LineDataSet) lineDataSets.get(2)).setDrawCircles(false);
-        ((LineDataSet) lineDataSets.get(2)).setLineWidth(4);
+        Line confirmedLine = chart.line(confirmedMapping);
+        confirmedLine.name("Confirmed");
+        confirmedLine.hovered().markers().enabled(true);
+        confirmedLine.hovered().markers().type(MarkerType.CIRCLE).size(4d);
+        confirmedLine.tooltip().position("right").anchor(Anchor.LEFT_CENTER).offsetX(5d).offsetY(5d);
 
-//        ((LineDataSet) lineDataSets.get(3)).enableDashedLine(50, 10, 0);
-        ((LineDataSet) lineDataSets.get(3)).setColor(Color.BLUE);
-        ((LineDataSet) lineDataSets.get(3)).setCircleColor(Color.BLUE);
-        ((LineDataSet) lineDataSets.get(3)).setDrawCircles(false);
-        ((LineDataSet) lineDataSets.get(3)).setLineWidth(4);
+        Line deathsLine = chart.line(deathsMapping);
+        deathsLine.name("Deaths");
+        deathsLine.hovered().markers().enabled(true);
+        deathsLine.hovered().markers().type(MarkerType.CIRCLE).size(4d);
+        deathsLine.tooltip().position("right").anchor(Anchor.LEFT_CENTER).offsetX(5d).offsetY(5d);
 
-        LineData lineData = new LineData(lineDataSets);
-        lineData.setDrawValues(false);
-        this.lineChart.setData(lineData);
+        Line recoveredLine = chart.line(recoveredMapping);
+        recoveredLine.name("Recovered");
+        recoveredLine.hovered().markers().enabled(true);
+        recoveredLine.hovered().markers().type(MarkerType.CIRCLE).size(4d);
+        recoveredLine.tooltip().position("right").anchor(Anchor.LEFT_CENTER).offsetX(5d).offsetY(5d);
 
-        this.lineChart.getXAxis().setValueFormatter(new DateValueFormatter(referenceTimeStamp));
+        Line activeLine = chart.line(activeMapping);
+        activeLine.name("Active");
+        activeLine.hovered().markers().enabled(true);
+        activeLine.hovered().markers().type(MarkerType.CIRCLE).size(4d);
+        activeLine.tooltip().position("right").anchor(Anchor.LEFT_CENTER).offsetX(5d).offsetY(5d);
 
-//        this.lineChart.refreshDrawableState();
-        this.lineChart.notifyDataSetChanged();
-        this.lineChart.invalidate();
-        Log.i(TAG, "setData: invalidated the line-chart");
+        chart.legend().enabled(true);
+        chart.legend().fontSize(13d);
+        chart.legend().padding(0d, 0d, 10d, 0d);
+
+        this.chartView.setChart(chart);
+        this.chartView.invalidate();
     }
 
     @Override
@@ -201,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             @Override
             public void onChanged(List<CountryInfo> countryInfos) {
                 Log.i(TAG, "onChanged: Changed data set to " + parent.getAdapter().getItem(position));
-                setData(countryInfos, countryInfos.get(0).getDate().substring(0, 10));
+                setData(countryInfos);
             }
         });
     }
@@ -210,5 +158,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onNothingSelected(AdapterView<?> parent) {
     }
 
+    private static class CustomDataEntry extends ValueDataEntry {
+
+        public CustomDataEntry(String date, Number confirmed, Number deaths, Number recovered, Number active) {
+            super(date, confirmed);
+            setValue("confirmed", confirmed);
+            setValue("deaths", deaths);
+            setValue("recovered", recovered);
+            setValue("active", active);
+        }
+    }
 }
 
